@@ -8,7 +8,6 @@ import yaml
 from shutil import copyfile
 import os
 import shutil
-import __init__ as booger
 
 from tasks.semantic.modules.user import *
 def str2bool(v):

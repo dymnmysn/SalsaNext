@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # This file is covered by the LICENSE file in the root of this project.
+import sys
+sys.path.append('/ari/users/ibaskaya/projeler/SalsaNext/train')
 
 import argparse
 import datetime
 import os
 import shutil
 from shutil import copyfile
-import __init__ as booger
 import yaml
 from tasks.semantic.modules.trainer import *
 from pip._vendor.distlib.compat import raw_input
@@ -68,7 +69,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--log', '-l',
         type=str,
-        default="~/output",
+        default="output",
         help='Directory to put the log data. Default: ~/logs/date+time'
     )
     parser.add_argument(
@@ -81,7 +82,7 @@ if __name__ == '__main__':
         '--pretrained', '-p',
         type=str,
         required=False,
-        default=None,
+        default='',
         help='Directory to get the pretrained model. If not passed, do from scratch!'
     )
     parser.add_argument(

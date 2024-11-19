@@ -5,11 +5,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
-import imp
 import yaml
 import time
 from PIL import Image
-import __init__ as booger
 import collections
 import copy
 import cv2
@@ -19,6 +17,7 @@ import numpy as np
 from tasks.semantic.modules.SalsaNext import *
 from tasks.semantic.modules.SalsaNextAdf import *
 from tasks.semantic.postproc.KNN import KNN
+from tasks.semantic.dataset.kitti.parser import Parser
 
 
 class User():
@@ -33,11 +32,7 @@ class User():
     self.split = split
     self.mc = mc
 
-    # get the data
-    parserModule = imp.load_source("parserModule",
-                                   booger.TRAIN_PATH + '/tasks/semantic/dataset/' +
-                                   self.DATA["name"] + '/parser.py')
-    self.parser = parserModule.Parser(root=self.datadir,
+    self.parser = Parser(root=self.datadir,
                                       train_sequences=self.DATA["split"]["train"],
                                       valid_sequences=self.DATA["split"]["valid"],
                                       test_sequences=self.DATA["split"]["test"],

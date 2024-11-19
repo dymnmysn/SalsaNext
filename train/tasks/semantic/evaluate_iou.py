@@ -7,7 +7,6 @@ import yaml
 import sys
 import numpy as np
 import torch
-import __init__ as booger
 
 from tasks.semantic.modules.ioueval import iouEval
 from common.laserscan import SemLaserScan

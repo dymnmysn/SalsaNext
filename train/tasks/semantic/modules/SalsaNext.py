@@ -234,4 +234,4 @@ class SalsaNext(nn.Module):
     def forward(self, x):
         logits = self.salsa(x)
         logits = F.softmax(logits, dim=1)
-        return logits(base)
+        return logits

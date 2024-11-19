@@ -4,7 +4,6 @@
 import argparse
 import os
 import yaml
-import __init__ as booger
 
 from common.laserscan import LaserScan, SemLaserScan
 from common.laserscanvis import LaserScanVis

@@ -3,7 +3,6 @@
 import datetime
 import os
 import time
-import imp
 import cv2
 import torch
 import torch.backends.cudnn as cudnn
@@ -21,6 +20,7 @@ from tasks.semantic.modules.SalsaNext import *
 from tasks.semantic.modules.SalsaNextAdf import *
 from tasks.semantic.modules.Lovasz_Softmax import Lovasz_softmax
 import tasks.semantic.modules.adf as adf
+from tasks.semantic.dataset.kitti.parser import Parser
 
 def keep_variance_fn(x):
     return x + 1e-3
@@ -88,10 +88,7 @@ class Trainer():
                      "best_val_iou": 0}
 
         # get the data
-        parserModule = imp.load_source("parserModule",
-                                       booger.TRAIN_PATH + '/tasks/semantic/dataset/' +
-                                       self.DATA["name"] + '/parser.py')
-        self.parser = parserModule.Parser(root=self.datadir,
+        self.parser = Parser(root=self.datadir,
                                           train_sequences=self.DATA["split"]["train"],
                                           valid_sequences=self.DATA["split"]["valid"],
                                           test_sequences=None,
