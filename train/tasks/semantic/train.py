@@ -85,6 +85,14 @@ if __name__ == '__main__':
         default='',
         help='Directory to get the pretrained model. If not passed, do from scratch!'
     )
+
+    parser.add_argument(
+        '--iswaymo', '-w',
+        type=str,
+        required=False,
+        default=False,
+        help='Directory to get the pretrained model. If not passed, do from scratch!'
+    )
     parser.add_argument(
         '--uncertainty', '-u',
         type=str2bool, nargs='?',
@@ -174,5 +182,5 @@ if __name__ == '__main__':
         quit()
 
     # create trainer and start the training
-    trainer = Trainer(ARCH, DATA, FLAGS.dataset, FLAGS.log, FLAGS.pretrained,FLAGS.uncertainty)
+    trainer = Trainer(ARCH, DATA, FLAGS.dataset, FLAGS.log, FLAGS.pretrained,FLAGS.uncertainty,FLAGS.iswaymo)
     trainer.train()

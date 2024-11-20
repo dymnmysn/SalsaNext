@@ -2,7 +2,7 @@ import os
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from common.laserscan import LaserScan, SemLaserScan
+from common.laserscan import LaserScan, SemLaserScan, SemLaserScanWaymo, LaserScanWaymo
 import torchvision
 
 import torch
@@ -20,8 +20,8 @@ from collections.abc import Sequence, Iterable
 import warnings
 
 
-EXTENSIONS_SCAN = ['.bin']
-EXTENSIONS_LABEL = ['.label']
+EXTENSIONS_SCAN = ['.bin','.npz']
+EXTENSIONS_LABEL = ['.label','.npz']
 
 
 def is_scan(filename):
@@ -69,15 +69,29 @@ class SemanticKitti(Dataset):
                learning_map_inv,    # inverse of previous (recover labels)
                sensor,              # sensor to parse scans from
                max_points=150000,   # max number of points present in dataset
-               gt=True,
-               transform=False):            # send ground truth?
+               gt=True,             # send ground truth?
+               transform=False,
+               iswaymo = False,
+               istrain = False):            
     # save deats
-    self.root = os.path.join(root, "sequences")
+    self.iswaymo = iswaymo
+    self.istrain = istrain
+    if not iswaymo:
+      self.root = os.path.join(root, "sequences")
+    elif self.istrain:
+      self.root = os.path.join(root, "training")
+    else:
+      self.root = os.path.join(root, "validation")
+
     self.sequences = sequences
     self.labels = labels
     self.color_map = color_map
     self.learning_map = learning_map
     self.learning_map_inv = learning_map_inv
+    if iswaymo:
+      self.learning_map = {i:i for i in range(23)}
+      self.learning_map_inv = {i:i for i in range(23)}
+
     self.sensor = sensor
     self.sensor_img_H = sensor["img_prop"]["height"]
     self.sensor_img_W = sensor["img_prop"]["width"]
@@ -102,7 +116,7 @@ class SemanticKitti(Dataset):
     if os.path.isdir(self.root):
       print("Sequences folder exists! Using sequences from %s" % self.root)
     else:
-      raise ValueError("Sequences folder doesn't exist! Exiting...")
+      raise ValueError(f"Sequences folder ({self.root}) doesn't exist! Exiting...")
 
     # make sure labels is a dict
     assert(isinstance(self.labels, dict))
@@ -121,29 +135,43 @@ class SemanticKitti(Dataset):
     self.label_files = []
 
     # fill in with names, checking that all sequences are complete
-    for seq in self.sequences:
-      # to string
-      seq = '{0:02d}'.format(int(seq))
-
-      print("parsing seq {}".format(seq))
-
-      # get paths for each
-      scan_path = os.path.join(self.root, seq, "velodyne")
-      label_path = os.path.join(self.root, seq, "labels")
-
-      # get files
+    if iswaymo:
+      scan_path = os.path.join(self.root, "images")
+      label_path = os.path.join(self.root, "labels")
       scan_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(
-          os.path.expanduser(scan_path)) for f in fn if is_scan(f)]
+            os.path.expanduser(scan_path)) for f in fn if is_scan(f)]
       label_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(
-          os.path.expanduser(label_path)) for f in fn if is_label(f)]
-
-      # check all scans have labels
+            os.path.expanduser(label_path)) for f in fn if is_label(f)]
       if self.gt:
         assert(len(scan_files) == len(label_files))
 
-      # extend list
       self.scan_files.extend(scan_files)
       self.label_files.extend(label_files)
+      
+    else:
+      for seq in self.sequences:
+        # to string
+        seq = '{0:02d}'.format(int(seq))
+
+        print("parsing seq {}".format(seq))
+
+        # get paths for each
+        scan_path = os.path.join(self.root, seq, "velodyne")
+        label_path = os.path.join(self.root, seq, "labels")
+
+        # get files
+        scan_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(
+            os.path.expanduser(scan_path)) for f in fn if is_scan(f)]
+        label_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(
+            os.path.expanduser(label_path)) for f in fn if is_label(f)]
+
+        # check all scans have labels
+        if self.gt:
+          assert(len(scan_files) == len(label_files))
+
+        # extend list
+        self.scan_files.extend(scan_files)
+        self.label_files.extend(label_files)
 
     # sort for correspondance
     self.scan_files.sort()
@@ -173,34 +201,57 @@ class SemanticKitti(Dataset):
                 rot = True
             drop_points = random.uniform(0, 0.5)
 
-    if self.gt:
-      scan = SemLaserScan(self.color_map,
-                          project=True,
-                          H=self.sensor_img_H,
-                          W=self.sensor_img_W,
-                          fov_up=self.sensor_fov_up,
-                          fov_down=self.sensor_fov_down,
-                          DA=DA,
-                          flip_sign=flip_sign,
-                          drop_points=drop_points)
-    else:
-      scan = LaserScan(project=True,
-                       H=self.sensor_img_H,
-                       W=self.sensor_img_W,
-                       fov_up=self.sensor_fov_up,
-                       fov_down=self.sensor_fov_down,
-                       DA=DA,
-                       rot=rot,
-                       flip_sign=flip_sign,
-                       drop_points=drop_points)
+    if not self.iswaymo:
+      if self.gt:
+        scan = SemLaserScan(self.color_map,
+                            project=True,
+                            H=self.sensor_img_H,
+                            W=self.sensor_img_W,
+                            fov_up=self.sensor_fov_up,
+                            fov_down=self.sensor_fov_down,
+                            DA=DA,
+                            flip_sign=flip_sign,
+                            drop_points=drop_points)
+      else:
+        scan = LaserScan(project=True,
+                        H=self.sensor_img_H,
+                        W=self.sensor_img_W,
+                        fov_up=self.sensor_fov_up,
+                        fov_down=self.sensor_fov_down,
+                        DA=DA,
+                        rot=rot,
+                        flip_sign=flip_sign,
+                        drop_points=drop_points)
 
+    else: 
+      if self.gt:
+        scan = SemLaserScanWaymo(self.color_map,
+                            project=True,
+                            H=self.sensor_img_H,
+                            W=self.sensor_img_W,
+                            fov_up=self.sensor_fov_up,
+                            fov_down=self.sensor_fov_down,
+                            DA=DA,
+                            flip_sign=flip_sign,
+                            drop_points=drop_points)
+      else:
+        scan = LaserScanWaymo(project=True,
+                        H=self.sensor_img_H,
+                        W=self.sensor_img_W,
+                        fov_up=self.sensor_fov_up,
+                        fov_down=self.sensor_fov_down,
+                        DA=DA,
+                        rot=rot,
+                        flip_sign=flip_sign,
+                        drop_points=drop_points)
     # open and obtain scan
     scan.open_scan(scan_file)
     if self.gt:
       scan.open_label(label_file)
       # map unused classes to used classes (also for projection)
-      scan.sem_label = self.map(scan.sem_label, self.learning_map)
-      scan.proj_sem_label = self.map(scan.proj_sem_label, self.learning_map)
+      if not self.iswaymo:
+        scan.sem_label = self.map(scan.sem_label, self.learning_map)
+        scan.proj_sem_label = self.map(scan.proj_sem_label, self.learning_map)
 
     # make a tensor of the uncompressed data (with the max num points)
     unproj_n_points = scan.points.shape[0]
@@ -292,10 +343,12 @@ class Parser():
                batch_size,        # batch size for train and val
                workers,           # threads to load data
                gt=True,           # get gt?
-               shuffle_train=True):  # shuffle training set?
+               shuffle_train=True,
+               iswaymo = False ):  # shuffle training set?
     super(Parser, self).__init__()
 
     # if I am training, get the dataset
+    self.iswwaymo = iswaymo
     self.root = root
     self.train_sequences = train_sequences
     self.valid_sequences = valid_sequences
@@ -313,6 +366,8 @@ class Parser():
 
     # number of classes that matters is the one for xentropy
     self.nclasses = len(self.learning_map_inv)
+    if self.iswaymo:
+      self.nclasses = 23
 
     # Data loading code
     self.train_dataset = SemanticKitti(root=self.root,
@@ -324,7 +379,9 @@ class Parser():
                                        sensor=self.sensor,
                                        max_points=max_points,
                                        transform=True,
-                                       gt=self.gt)
+                                       gt=self.gt,
+                                       iswaymo=self.iswwaymo,
+                                       istrain=True)
 
     self.trainloader = torch.utils.data.DataLoader(self.train_dataset,
                                                    batch_size=self.batch_size,
@@ -342,7 +399,9 @@ class Parser():
                                        learning_map_inv=self.learning_map_inv,
                                        sensor=self.sensor,
                                        max_points=max_points,
-                                       gt=self.gt)
+                                       gt=self.gt,
+                                       iswaymo=self.iswwaymo,
+                                       istrain=False)
 
     self.validloader = torch.utils.data.DataLoader(self.valid_dataset,
                                                    batch_size=self.batch_size,

@@ -61,7 +61,7 @@ def save_checkpoint(to_save, logdir, suffix=""):
 
 
 class Trainer():
-    def __init__(self, ARCH, DATA, datadir, logdir, path=None,uncertainty=False):
+    def __init__(self, ARCH, DATA, datadir, logdir, path=None,uncertainty=False, iswaymo = False):
         # parameters
         self.ARCH = ARCH
         self.DATA = DATA
@@ -74,6 +74,7 @@ class Trainer():
         self.data_time_t = AverageMeter()
         self.batch_time_e = AverageMeter()
         self.epoch = 0
+        self.iswaymo = iswaymo
 
         # put logger where it belongs
 
@@ -101,7 +102,8 @@ class Trainer():
                                           batch_size=self.ARCH["train"]["batch_size"],
                                           workers=self.ARCH["train"]["workers"],
                                           gt=True,
-                                          shuffle_train=True)
+                                          shuffle_train=True,
+                                          iswaymo=self.iswaymo)
 
         # weights for loss (and bias)
 
