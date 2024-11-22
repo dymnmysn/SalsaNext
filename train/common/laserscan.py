@@ -316,6 +316,8 @@ class SemLaserScan(LaserScan):
         # instances
         self.proj_inst_label[mask] = self.inst_label[self.proj_idx[mask]]
         self.proj_inst_color[mask] = self.inst_color_lut[self.inst_label[self.proj_idx[mask]]]
+
+
 class LaserScanWaymo:
     """Class that contains LaserScan with x,y,z,r"""
     EXTENSIONS_SCAN = ['.npz']
