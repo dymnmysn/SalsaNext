@@ -404,9 +404,11 @@ class LaserScanWaymo:
         sz = 2.184
         sy = 0
         s = np.array([sx,sy,sz])
-        scan[1:3] = -1*scan[1:3]
+        scan[...,1:3] = -1*scan[...,1:3]
         scan[...,0] = scan[...,0]-sx
         scan[...,2] = scan[...,2]+sz
+        scan[...,1] = -1 * scan[...,1]
+
 
         # put in attribute
         points = scan[:, 0:3]  # get xyz
